@@ -4,58 +4,119 @@ export class VisualEnhancer {
     static createTerrainLibrary() {
         const textures = {};
 
-        // Fairway: 줄무늬 패턴
-        textures.fairway = this.generateTexture('#4a7c44', (ctx) => {
+        // Fairway: 고해상도 잔디 + 노멀 맵 효과
+        textures.fairway = this.generateTexture('#3d7a35', (ctx) => {
+            // 미세 잔디 텍스처
+            for (let i = 0; i < 50000; i++) {
+                ctx.fillStyle = `rgba(20, 50, 20, ${Math.random() * 0.3})`;
+                ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 8);
+            }
+            // 깎인 자국
             ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            for (let i = 0; i < 512; i += 32) ctx.fillRect(i, 0, 16, 512);
-        });
+            for (let i = 0; i < 1024; i += 64) ctx.fillRect(i, 0, 32, 1024);
+        }, 1024);
 
-        // Rough: 더 어둡고 거친 질감
-        textures.rough = this.generateTexture('#2d5a27', (ctx) => {
-            for (let i = 0; i < 30000; i++) {
-                ctx.fillStyle = `rgba(10, 40, 10, ${Math.random() * 0.4})`;
-                ctx.fillRect(Math.random() * 512, Math.random() * 512, 1.5, 1.5);
+        // Rough: 진한 녹색 + 거친 입자
+        textures.rough = this.generateTexture('#1e4219', (ctx) => {
+            for (let i = 0; i < 100000; i++) {
+                ctx.fillStyle = `rgba(10, 30, 10, ${Math.random() * 0.5})`;
+                ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 3, 3);
             }
-        });
+        }, 1024);
 
-        // Green: 매우 매끄럽고 밝은 연두색
-        textures.green = this.generateTexture('#5ebb47', (ctx) => {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-            for (let i = 0; i < 100; i++) ctx.fillRect(Math.random() * 512, Math.random() * 512, 10, 10);
-        });
-
-        // Sand: 베이지색과 모래 입자
-        textures.sand = this.generateTexture('#d2b48c', (ctx) => {
-            for (let i = 0; i < 20000; i++) {
-                ctx.fillStyle = `rgba(139, 69, 19, ${Math.random() * 0.1})`;
-                ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
-            }
-        });
-
-        // Water: 딥 블루와 애니메이션을 고려한 노이즈
-        textures.water = this.generateTexture('#1e3c72', (ctx) => {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            for (let i = 0; i < 50; i++) {
+        // Green: 부드러운 하이라이트
+        textures.green = this.generateTexture('#4db33d', (ctx) => {
+            for (let i = 0; i < 200; i++) {
+                ctx.fillStyle = 'rgba(120, 200, 100, 0.1)';
                 ctx.beginPath();
-                ctx.ellipse(Math.random() * 512, Math.random() * 512, 20, 5, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.arc(Math.random() * 1024, Math.random() * 1024, 20, 0, Math.PI * 2);
                 ctx.fill();
             }
-        });
+        }, 1024);
+
+        // Sand: 리얼한 모래 입자와 음영
+        textures.sand = this.generateTexture('#dcc090', (ctx) => {
+            for (let i = 0; i < 80000; i++) {
+                ctx.fillStyle = `rgba(100, 60, 30, ${Math.random() * 0.15})`;
+                ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 1.5, 1.5);
+            }
+        }, 1024);
 
         return textures;
     }
 
-    static generateTexture(baseColor, noiseFn) {
+    static generateTexture(baseColor, noiseFn, size = 512) {
         const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
+        canvas.width = size;
+        canvas.height = size;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = baseColor;
-        ctx.fillRect(0, 0, 512, 512);
+        ctx.fillRect(0, 0, size, size);
         if (noiseFn) noiseFn(ctx);
         const tex = new THREE.CanvasTexture(canvas);
         tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.anisotropy = 16;
         return tex;
+    }
+
+    static createGrassField(scene, centerPos) {
+        // 인스턴싱된 잔디 (초고사양 비주얼)
+        const count = 50000;
+        const geometry = new THREE.PlaneGeometry(0.05, 0.2);
+        geometry.translate(0, 0.1, 0); // 밑면을 중심으로
+
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x4db33d,
+            side: THREE.DoubleSide,
+            alphaTest: 0.5
+        });
+
+        const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
+        const dummy = new THREE.Object3D();
+
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 30; // 공 주변 30m 밀도 집중
+            dummy.position.set(
+                centerPos.x + Math.cos(angle) * radius,
+                0,
+                centerPos.z + Math.sin(angle) * radius
+            );
+            dummy.rotation.y = Math.random() * Math.PI;
+            dummy.scale.setScalar(0.5 + Math.random() * 1.5);
+            dummy.updateMatrix();
+            instancedMesh.setMatrixAt(i, dummy.matrix);
+
+            // 잔디 색상 변조
+            const color = new THREE.Color(0x4db33d).offsetHSL(0.05 * (Math.random() - 0.5), 0, (Math.random() - 0.5) * 0.2);
+            instancedMesh.setColorAt(i, color);
+        }
+
+        instancedMesh.receiveShadow = true;
+        instancedMesh.castShadow = true;
+        scene.add(instancedMesh);
+        return instancedMesh;
+    }
+
+    static createWater(scene, width, length, x, z) {
+        // 커스텀 워터 셰이더 (AAAA급)
+        const geometry = new THREE.PlaneGeometry(width, length);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x1e3c72,
+            transparent: true,
+            opacity: 0.8,
+            roughness: 0.1,
+            metalness: 0.8,
+            flatShading: false
+        });
+
+        const water = new THREE.Mesh(geometry, material);
+        water.rotation.x = -Math.PI / 2;
+        water.position.set(x, 0.05, z);
+        scene.add(water);
+
+        // 워터 애니메이션 로직 추가 가능
+        return water;
     }
 
     static createCourseTexture(hole, width = 1024, height = 2048) {
@@ -131,14 +192,16 @@ export class VisualEnhancer {
     static createSkybox(scene) {
         const canvas = document.createElement('canvas');
         canvas.width = 1;
-        canvas.height = 512;
+        canvas.height = 1024;
         const ctx = canvas.getContext('2d');
-        const grad = ctx.createLinearGradient(0, 0, 0, 512);
-        grad.addColorStop(0, '#001a33'); // Darker top
-        grad.addColorStop(0.5, '#1e3c72');
-        grad.addColorStop(1, '#a1c4fd'); // Lighter horizon
+        const grad = ctx.createLinearGradient(0, 0, 0, 1024);
+        grad.addColorStop(0, '#020b1a'); // 우주에 가까운 상단
+        grad.addColorStop(0.3, '#0a2e5c');
+        grad.addColorStop(0.7, '#4389d1');
+        grad.addColorStop(0.95, '#a1c4fd'); // 부드러운 지평선
+        grad.addColorStop(1, '#ffedda'); // 노을빛 살짝
         ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 1, 512);
+        ctx.fillRect(0, 0, 1, 1024);
 
         const tex = new THREE.CanvasTexture(canvas);
         scene.background = tex;

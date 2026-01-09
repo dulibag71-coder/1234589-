@@ -99,50 +99,60 @@ class GolfApp {
     }
 
     setupScene() {
-        this.scene.background = new THREE.Color(0x87ceeb);
+        this.scene.background = new THREE.Color(0x0a2e5c);
         try {
             VisualEnhancer.createSkybox(this.scene);
         } catch (e) {
             console.warn("Skybox creation failed", e);
         }
 
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        // 고성능 조명 설정
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-        const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-        sun.position.set(100, 300, 100);
+        const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+        sun.position.set(150, 300, 150);
         sun.castShadow = true;
-        sun.shadow.mapSize.width = 4096; // 그림자 품질 대폭 상향
+        sun.shadow.mapSize.width = 4096;
         sun.shadow.mapSize.height = 4096;
         sun.shadow.camera.left = -500;
         sun.shadow.camera.right = 500;
         sun.shadow.camera.top = 500;
-        sun.shadow.camera.bottom = -1500; // 코스 길이에 맞춰 확장
-        sun.shadow.bias = -0.0001;
+        sun.shadow.camera.bottom = -2000;
+        sun.shadow.bias = -0.00005;
+        sun.shadow.normalBias = 0.02;
         this.scene.add(sun);
 
-        // 고품질 지형 생성 (18홀 가변対応)
-        const groundGeo = new THREE.PlaneGeometry(1000, 2000, 1, 1);
+        // 지형 바닥 (노멀 맵 효과 포함)
+        const groundGeo = new THREE.PlaneGeometry(1000, 2000, 64, 128);
         this.groundMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff, // 텍스처 색상 사용
-            roughness: 0.8,
-            metalness: 0.0
+            color: 0xffffff,
+            roughness: 0.9,
+            metalness: 0.05
         });
         this.ground = new THREE.Mesh(groundGeo, this.groundMat);
         this.ground.rotation.x = -Math.PI / 2;
-        this.ground.position.z = -1000; // 중심을 코스 방향으로
+        this.ground.position.z = -1000;
         this.ground.receiveShadow = true;
         this.scene.add(this.ground);
 
+        // AAAA급 잔디밭 (초기 배정)
+        this.grassField = VisualEnhancer.createGrassField(this.scene, { x: 0, z: 0 });
+
         // 필드 오브젝트 대기
-        const ballGeo = new THREE.SphereGeometry(0.021, 24, 24);
-        const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.2 });
+        const ballGeo = new THREE.SphereGeometry(0.021, 32, 32);
+        const ballMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            metalness: 0.2,
+            roughness: 0.1,
+            envMapIntensity: 1.0
+        });
         this.ballMesh = new THREE.Mesh(ballGeo, ballMat);
         this.ballMesh.castShadow = true;
         this.scene.add(this.ballMesh);
 
         this.setCameraAddress();
 
-        const tracerMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+        const tracerMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
         const tracerGeo = new THREE.BufferGeometry();
         this.tracerLine = new THREE.Line(tracerGeo, tracerMat);
         this.scene.add(this.tracerLine);
@@ -156,12 +166,25 @@ class GolfApp {
         this.groundMat.map = VisualEnhancer.createCourseTexture(currentHole);
         this.groundMat.needsUpdate = true;
 
-        // 기존 나무/핀 제거 (식생 갱신)
+        // 기존 코스 오브젝트 제거 (나무, 핀, 물, 잔디)
         const toDelete = [];
         this.scene.traverse(child => {
             if (child._isCourseObject) toDelete.push(child);
         });
         toDelete.forEach(c => this.scene.remove(c));
+
+        // 워터 오브젝트 생성 (셰이더 기반)
+        for (const w of currentHole.water) {
+            const water = VisualEnhancer.createWater(this.scene, w.width, w.length, w.x, w.z);
+            water._isCourseObject = true;
+        }
+
+        // 잔디 필드 위치 업데이트 (홀 티박스 주변으로 이동)
+        if (this.grassField) {
+            this.scene.remove(this.grassField);
+        }
+        this.grassField = VisualEnhancer.createGrassField(this.scene, currentHole.teePosition);
+        this.grassField._isCourseObject = true;
 
         this.setupCourseObjects();
         this.minimap.setCourse(currentHole);

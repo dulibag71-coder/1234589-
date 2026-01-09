@@ -7,5 +7,15 @@ export default defineConfig({
     },
     optimizeDeps: {
         exclude: ['ammo.js']
+    },
+    build: {
+        rollupOptions: {
+            input: {
+                main: 'index.html',
+                game: 'game.html',
+                settings: 'settings.html',
+                history: 'history.html'
+            }
+        }
     }
 });
