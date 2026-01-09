@@ -238,6 +238,18 @@ class GolfApp {
         this.cameraMode = 'ADDRESS';
         this.camera.position.set(0, 1.5, 3);
         this.camera.lookAt(0, 0, -50);
+
+        // 공을 티박스 위치로 이동
+        if (this.course && this.ballMesh) {
+            const teePos = this.course.getCurrentHole().teePosition;
+            this.ballMesh.position.set(teePos.x, teePos.y + 0.021, teePos.z);
+            this.ballMesh.quaternion.set(0, 0, 0, 1);
+        }
+
+        // 궤적 초기화
+        if (this.tracerLine) {
+            this.tracerLine.geometry.setFromPoints([]);
+        }
     }
 
     setupVision() {
