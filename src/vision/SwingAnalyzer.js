@@ -27,16 +27,49 @@ export class SwingAnalyzer {
     analyze(results) {
         if (!results.poseWorldLandmarks) return;
 
-        const rawWrist = results.poseWorldLandmarks[16]; // 오른손잡이 기준 오른손목(16) 또는 왼손목(15). 여기서는 혼합 고려 가능
-        const wrist = this.wristFilter.filter(rawWrist);
+        // 양손목의 중간 지점을 추적하여 더 정확한 클럽 위치 추정
+        const leftWrist = results.poseWorldLandmarks[15];
+        const rightWrist = results.poseWorldLandmarks[16];
+        const shoulders = [results.poseWorldLandmarks[11], results.poseWorldLandmarks[12]];
 
+        const avgWrist = {
+            x: (leftWrist.x + rightWrist.x) / 2,
+            y: (leftWrist.y + rightWrist.y) / 2,
+            z: (leftWrist.z + rightWrist.z) / 2,
+            visibility: Math.min(leftWrist.visibility, rightWrist.visibility)
+        };
+
+        const wrist = this.wristFilter.filter(avgWrist);
         const timestamp = performance.now();
-        const data = { wrist, timestamp };
+
+        // 어드레스 자세 여부 판단
+        const isStance = this.checkAddressStance(leftWrist, rightWrist, shoulders);
+
+        const data = { wrist, timestamp, isStance };
 
         this.history.push(data);
         if (this.history.length > this.maxHistory) this.history.shift();
 
         this.detectPhase();
+    }
+
+    checkAddressStance(left, right, shoulders) {
+        // 1. 양손이 모여 있는가? (거리 체크)
+        const handDist = Math.sqrt((left.x - right.x) ** 2 + (left.y - right.y) ** 2 + (left.z - right.z) ** 2);
+        const handsTogether = handDist < 0.2; // 약 20cm 이내
+
+        // 2. 양손이 어깨선보다 낮은가?
+        const avgShoulderY = (shoulders[0].y + shoulders[1].y) / 2;
+        const handsLow = left.y < avgShoulderY && right.y < avgShoulderY;
+
+        // 3. 양손이 몸의 중심축 근처에 있는가?
+        const avgShoulderX = (shoulders[0].x + shoulders[1].x) / 2;
+        const handsCentered = Math.abs((left.x + right.x) / 2 - avgShoulderX) < 0.3;
+
+        // 4. 가시성 체크 (사람이 명확히 보이는가)
+        const visible = left.visibility > 0.5 && right.visibility > 0.5;
+
+        return handsTogether && handsLow && handsCentered && visible;
     }
 
     detectPhase() {
@@ -55,10 +88,11 @@ export class SwingAnalyzer {
         };
         const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
 
-        // 페이즈 감지 로직 (간략화된 버전)
+        // 페이즈 감지 로직
         switch (this.phase) {
             case SWING_PHASE.WAITING:
-                if (speed < 0.1) {
+                // 속도가 낮고 + 골프 어드레스 자세가 감지되어야 함
+                if (speed < 0.15 && current.isStance) {
                     this.setPhase(SWING_PHASE.ADDRESS);
                 }
                 break;

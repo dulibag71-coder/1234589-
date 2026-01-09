@@ -264,7 +264,7 @@ class GolfApp {
         }
 
         // 어드레스 상태가 1초(약 30프레임) 유지되어야 READY
-        if (this.analyzer.currentPhase === SWING_PHASE.ADDRESS) {
+        if (this.analyzer.phase === SWING_PHASE.ADDRESS) {
             this.readyTimer += 1;
             if (this.readyTimer > 30) {
                 this.isReady = true;
@@ -273,13 +273,14 @@ class GolfApp {
                     this.ui.ready.className = 'status-ready';
                 }
             }
-        } else if (this.analyzer.currentPhase === SWING_PHASE.BACKSWING || this.analyzer.currentPhase === SWING_PHASE.DOWNSWING) {
+        } else if (this.analyzer.phase === SWING_PHASE.BACKSWING || this.analyzer.phase === SWING_PHASE.DOWNSWING) {
             // 스윙 중에는 레디 상태 유지
         } else {
             this.isReady = false;
             this.readyTimer = 0;
             if (this.ui.ready) {
-                this.ui.ready.innerText = 'WAIT';
+                // 자세가 안 잡혔을 때의 가이드성 메시지
+                this.ui.ready.innerText = 'TAKE STANCE';
                 this.ui.ready.className = 'status-wait';
             }
         }
