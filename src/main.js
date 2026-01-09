@@ -142,17 +142,12 @@ class GolfApp {
 
         // 필드 오브젝트 대기
         const ballGeo = new THREE.SphereGeometry(0.021, 32, 32);
-        const ballMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            metalness: 0.2,
-            roughness: 0.1,
-            envMapIntensity: 1.0
-        });
-        this.ballMesh = new THREE.Mesh(ballGeo, ballMat);
+        this.ballMesh = new THREE.Mesh(ballGeo, VisualEnhancer.getBallMaterial());
         this.ballMesh.castShadow = true;
         this.scene.add(this.ballMesh);
 
-        this.setCameraAddress();
+        // Weather effects
+        VisualEnhancer.createWeatherEffect(this.scene);
 
         const tracerMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
         const tracerGeo = new THREE.BufferGeometry();
@@ -188,9 +183,16 @@ class GolfApp {
         this.grassField = VisualEnhancer.createGrassField(this.scene, currentHole.teePosition);
         this.grassField._isCourseObject = true;
 
-        this.setupCourseObjects();
         this.minimap.setCourse(currentHole);
         this.updateMinimap();
+
+        // ⚠️ Definitive Ball Sync: Create physics body immediately
+        if (this.physics) {
+            this.physics.createBall(currentHole.teePosition);
+            this.ballMesh.position.set(currentHole.teePosition.x, currentHole.teePosition.y + 0.021, currentHole.teePosition.z);
+        }
+
+        if (this.audio) this.audio.playAmbient();
 
         // UI 정보 갱신
         if (document.getElementById('ui-hole-num')) document.getElementById('ui-hole-num').innerText = `HOLE ${currentHole.hole}`;

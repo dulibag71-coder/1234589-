@@ -304,6 +304,92 @@ export class VisualEnhancer {
         }
     }
 
+    static getBallMaterial() {
+        // procedural dimple normal map
+        const size = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#8080ff'; // Neutral normal
+        ctx.fillRect(0, 0, size, size);
+
+        const dimpleCount = 15;
+        const radius = size / dimpleCount / 2;
+        for (let y = 0; y < dimpleCount; y++) {
+            for (let x = 0; x < dimpleCount; x++) {
+                const cx = (x + 0.5) * (size / dimpleCount);
+                const cy = (y + 0.5) * (size / dimpleCount);
+
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+                grad.addColorStop(0, '#8080ff');
+                grad.addColorStop(0.8, '#a0a0ff');
+                grad.addColorStop(1, '#8080ff');
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const normalMap = new THREE.CanvasTexture(canvas);
+        normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+        normalMap.repeat.set(2, 1);
+
+        return new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.1,
+            metalness: 0.1,
+            normalMap: normalMap,
+            normalScale: new THREE.Vector2(1.5, 1.5)
+        });
+    }
+
+    static createWeatherEffect(scene) {
+        // 1. Fog
+        scene.fog = new THREE.FogExp2(0x0a2e5c, 0.005);
+
+        // 2. Ambient Particles (Pollen/Dust)
+        const count = 1000;
+        const geo = new THREE.BufferGeometry();
+        const pos = new Float32Array(count * 3);
+        const vel = [];
+
+        for (let i = 0; i < count; i++) {
+            pos[i * 3] = (Math.random() - 0.5) * 100;
+            pos[i * 3 + 1] = Math.random() * 20;
+            pos[i * 3 + 2] = -Math.random() * 500;
+            vel.push(new THREE.Vector3((Math.random() - 0.5) * 0.02, -0.01, (Math.random() - 0.5) * 0.02));
+        }
+
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        const mat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.3
+        });
+
+        const particles = new THREE.Points(geo, mat);
+        scene.add(particles);
+
+        const animate = () => {
+            const positions = particles.geometry.attributes.position.array;
+            for (let i = 0; i < count; i++) {
+                positions[i * 3] += vel[i].x;
+                positions[i * 3 + 1] += vel[i].y;
+                positions[i * 3 + 2] += vel[i].z;
+
+                if (positions[i * 3 + 1] < 0) positions[i * 3 + 1] = 20;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+            requestAnimationFrame(animate);
+        };
+        animate();
+    }
+
     static createTree(x, z) {
         const group = new THREE.Group();
         const height = 4 + Math.random() * 4;

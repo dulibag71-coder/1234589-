@@ -44,6 +44,28 @@ export class AudioManager {
         }
     }
 
+    playAmbient() {
+        const osc = this.ctx.createOscillator();
+        const lfo = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const lfoGain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        lfo.frequency.setValueAtTime(0.5, this.ctx.currentTime);
+        lfoGain.gain.setValueAtTime(50, this.ctx.currentTime);
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+        lfo.start();
+        osc.start();
+        // Background wind simulation
+    }
+
     playImpact() { this.createSyntheticSound('IMPACT'); }
     playSwing() { this.createSyntheticSound('SWISH'); }
     playGroundHit() { this.createSyntheticSound('GROUND'); }
