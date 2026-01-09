@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANTIGRAVITY GOLF - EQUIPMENT ROOM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -2px;
+        }
+
+        .settings-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+        }
+
+        .bag-preview {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+            border-radius: 32px;
+            height: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .setting-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .setting-label {
+            display: block;
+            font-weight: 900;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        select,
+        input {
+            width: 100%;
+            background: #000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: 'Outfit';
+            font-size: 1rem;
+        }
+
+        .btn-save {
+            background: #2ecc71;
+            color: #000;
+            border: none;
+            padding: 20px;
+            border-radius: 15px;
+            font-weight: 900;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn-back {
+            text-decoration: none;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 25px;
+            border-radius: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>EQUIPMENT & SETTINGS</h1>
+        <a href="index.html" class="btn-back">✕ CLOSE</a>
+    </div>
+    <div class="settings-container">
+        <div class="bag-preview">
+            <div style="font-size: 10em; opacity: 0.05; font-weight: 900;">GEAR</div>
+            <div style="position:absolute; bottom:40px; text-align:center;">
+                <h2 style="margin:0;">TAYLORMADE STEALTH 2</h2>
+                <p style="opacity:0.5; margin:5px 0 0 0;">SELECTED DRIVER</p>
+            </div>
+        </div>
+        <div class="settings-list">
+            <div class="setting-item">
+                <span class="setting-label">SELECT CLUB</span>
+                <select>
+                    <option>Driver (9.0°)</option>
+                    <option>3-Wood (15.0°)</option>
+                    <option>7-Iron</option>
+                    <option>Putter</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">TEE HEIGHT</span>
+                <input type="range" min="30" max="50" value="45">
+                <div
+                    style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:5px; opacity:0.5;">
+                    <span>30mm</span><span>45mm</span><span>50mm</span></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">BALL MODEL</span>
+                <select>
+                    <option>Antigravity Pro V1</option>
+                    <option>Soft Feel Tour</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">WIND INTENSITY</span>
+                <select>
+                    <option>No Wind</option>
+                    <option>Gentle Breeze (2-3m/s)</option>
+                    <option>Strong Wind (5-8m/s)</option>
+                </select>
+            </div>
+            <button class="btn-save">APPLY CONFIGURATION</button>
+        </div>
+    </div>
+</body>
+
+</html>

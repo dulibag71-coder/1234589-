@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANTIGRAVITY GOLF - SIMULATION MODE</title>
+    <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@master/builds/ammo.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        #app {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: #000;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            color: #fff;
+            text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+
+        .hud-panel {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            pointer-events: auto;
+        }
+
+        #top-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            width: 95%;
+            justify-content: space-between;
+        }
+
+        .hole-info {
+            font-size: 1.8em;
+            font-weight: 900;
+            color: #f1c40f;
+            letter-spacing: -2px;
+        }
+
+        #minimap-container {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 220px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        #minimap {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%);
+            position: relative;
+        }
+
+        .map-ball {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #fff;
+            z-index: 10;
+        }
+
+        .map-pin {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #e74c3c;
+            border-radius: 50%;
+            z-index: 5;
+            border: 2px solid #fff;
+        }
+
+        #bottom-metrics {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            width: 95%;
+            height: 140px;
+        }
+
+        .metric-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #2ecc71;
+        }
+
+        .metric-value {
+            font-size: 2.8em;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.6;
+            font-weight: 400;
+            text-transform: uppercase;
+        }
+
+        #video-container {
+            position: absolute;
+            bottom: 180px;
+            right: 30px;
+            width: 280px;
+            height: 157px;
+            border-radius: 16px;
+            overflow: hidden;
+            transform: scaleX(-1);
+            background: #000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #ai-report {
+            position: absolute;
+            top: 100px;
+            right: 30px;
+            width: 320px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 25px;
+            border-radius: 30px;
+            font-weight: 900;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 1.1em;
+            letter-spacing: 1px;
+        }
+
+        .status-ready {
+            background: #2ecc71;
+            color: #000;
+        }
+
+        .btn-exit {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div id="canvas-container"></div>
+        <div id="ui-overlay">
+            <div id="top-bar">
+                <div class="hud-panel"><span class="hole-info" id="ui-hole-num">HOLE 1</span> <span id="ui-hole-par"
+                        style="margin-left:15px; opacity:0.6; font-weight:400;">PAR 4 | 380m</span></div>
+                <div class="hud-panel"><span id="swing-status" class="status-badge">READY</span></div>
+                <div class="hud-panel" style="display:flex; align-items:center; gap:10px;">
+                    <a href="index.html" class="btn-exit">✕</a>
+                    <span style="font-weight:900; font-size:1.2em;">USER PROFILE</span>
+                </div>
+            </div>
+            <div id="minimap-container">
+                <div id="minimap">
+                    <div id="map-pin" class="map-pin"></div>
+                    <div id="map-ball" class="map-ball"></div>
+                </div>
+                <div
+                    style="position:absolute; bottom:15px; width:100%; text-align:center; font-size:14px; font-weight:900;">
+                    PIN: <span id="dist-to-pin">380</span>m</div>
+            </div>
+            <div id="ai-report" class="hud-panel" style="display: none;">
+                <b style="color: #f1c40f; font-size: 1.2em;">ANALYTICS ENGINE</b>
+                <div id="report-content"
+                    style="font-size: 0.95em; margin-top: 12px; white-space: pre-wrap; line-height:1.6; opacity:0.9;">
+                </div>
+            </div>
+            <div id="bottom-metrics">
+                <div class="metric-box">
+                    <div class="metric-label">Ball Speed</div>
+                    <div id="val-ballspeed" class="metric-value">0.0</div>
+                    <div class="metric-label">m/s</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Angle</div>
+                    <div id="val-launchangle" class="metric-value">0.0</div>
+                    <div class="metric-label">deg</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Back Spin</div>
+                    <div id="val-backspin" class="metric-value">0</div>
+                    <div class="metric-label">rpm</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Carry</div>
+                    <div id="val-carry" class="metric-value">0.0</div>
+                    <div class="metric-label">m</div>
+                </div>
+                <div class="metric-box" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+                    <div class="metric-label">Total</div>
+                    <div id="val-totaldist" class="metric-value">0.0</div>
+                    <div class="metric-label">m</div>
+                </div>
+            </div>
+        </div>
+        <div id="video-container">
+            <video id="input-video" autoplay playsinline></video>
+        </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

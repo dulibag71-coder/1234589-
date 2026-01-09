@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANTIGRAVITY GOLF - DATA ANALYTICS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2ecc71;
+            --bg: #050505;
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -2px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+        }
+
+        .stat-value {
+            font-size: 3.5em;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.5;
+            margin-top: -10px;
+        }
+
+        .history-list {
+            margin-top: 40px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-list th {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.5;
+            font-weight: 400;
+        }
+
+        .history-list td {
+            padding: 20px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-back {
+            display: inline-block;
+            text-decoration: none;
+            color: #000;
+            background: #fff;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 900;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>SHOT ANALYTICS</h1>
+        <a href="index.html" class="btn-back">BACK TO GATEWAY</a>
+    </div>
+    <div class="grid">
+        <div class="card">
+            <div class="stat-value">284<span style="font-size:0.4em; color:#fff; margin-left:10px;">Yds</span></div>
+            <div class="stat-label">AVERAGE TOTAL DISTANCE</div>
+        </div>
+        <div class="card">
+            <div class="stat-value">68.2<span style="font-size:0.4em; color:#fff; margin-left:10px;">m/s</span></div>
+            <div class="stat-label">AVERAGE BALL SPEED</div>
+        </div>
+        <div class="card">
+            <div class="stat-value">84<span style="font-size:0.4em; color:#fff; margin-left:10px;">%</span></div>
+            <div class="stat-label">FAIRWAY HIT ACCURACY</div>
+        </div>
+    </div>
+    <table class="history-list">
+        <thead>
+            <tr>
+                <th>TIMESTAMP</th>
+                <th>CLUB</th>
+                <th>SPEED</th>
+                <th>CARRY</th>
+                <th>TOTAL</th>
+                <th>RESULT</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>2026.01.09 18:15</td>
+                <td>Driver</td>
+                <td>71.2 m/s</td>
+                <td>265 m</td>
+                <td>292 m</td>
+                <td style="color:#2ecc71;">FAIRWAY</td>
+            </tr>
+            <!-- 추가 데이터 로드 영역 -->
+        </tbody>
+    </table>
+</body>
+
+</html>

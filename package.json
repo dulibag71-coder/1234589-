@@ -1,0 +1,21 @@
+{
+  "name": "web-golf-simulator",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0",
+    "ammo.js": "github:kripken/ammo.js",
+    "@mediapipe/pose": "latest",
+    "@mediapipe/drawing_utils": "latest",
+    "@mediapipe/camera_utils": "latest"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
