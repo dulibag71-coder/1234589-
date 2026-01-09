@@ -1,11 +1,18 @@
-import { Pose } from '@mediapipe/pose';
-import { Camera } from '@mediapipe/camera_utils';
-
+// CDN을 통한 전역 객체 사용 (Vite 번들링 이슈 해결)
 export class PoseEstimator {
     constructor(videoElement, onResults) {
         this.videoElement = videoElement;
         this.onResults = onResults;
-        this.pose = new Pose({
+
+        // global Pose 객체 확인 (game.html에서 CDN으로 로드됨)
+        const PoseObj = window.Pose || (typeof Pose !== 'undefined' ? Pose : null);
+
+        if (!PoseObj) {
+            console.error("MediaPipe Pose library not loaded properly.");
+            return;
+        }
+
+        this.pose = new PoseObj({
             locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
             }
@@ -30,7 +37,14 @@ export class PoseEstimator {
             }
         });
 
-        const camera = new Camera(this.videoElement, {
+        const CameraObj = window.Camera || (typeof Camera !== 'undefined' ? Camera : null);
+
+        if (!CameraObj) {
+            console.error("MediaPipe Camera library not loaded properly.");
+            return;
+        }
+
+        const camera = new CameraObj(this.videoElement, {
             onFrame: async () => {
                 await this.pose.send({ image: this.videoElement });
             },

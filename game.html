@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANTIGRAVITY GOLF - SIMULATION MODE</title>
     <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@master/builds/ammo.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&display=swap" rel="stylesheet">
     <style>
         body {
@@ -271,7 +273,7 @@
             </div>
         </div>
         <div id="video-container">
-            <video id="input-video" autoplay playsinline></video>
+            <video id="input-video" autoplay playsinline muted></video>
         </div>
     </div>
     <script type="module" src="/src/main.js"></script>
