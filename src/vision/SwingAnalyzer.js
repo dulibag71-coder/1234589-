@@ -108,7 +108,8 @@ export class SwingAnalyzer {
                 break;
             case SWING_PHASE.DOWNSWING:
                 // 임팩트 감지: 속도가 정점을 찍고 급격히 줄어들거나, 궤적의 최하점 통과 시
-                if (speed > 5.0 && speed < this.lastVelocity) {
+                // 실내 웹캠 환경 고려하여 기준 완화 (5.0 -> 3.5)
+                if (speed > 3.5 && speed < this.lastVelocity) {
                     this.handleImpact(speed, velocity);
                     this.setPhase(SWING_PHASE.IMPACT);
                 }

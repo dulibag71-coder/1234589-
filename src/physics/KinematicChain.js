@@ -10,8 +10,6 @@ export class KinematicChain {
      */
     calculateBallSpeed(landmarks, speeds) {
         // 생체 역학 기반 속도 산출 공식
-        // ballSpeed = (hipω * 0.25 + torsoω * 0.25 + shoulderω * 0.2 + armω * 0.15 + wristω * 0.15) * clubEfficiency * contactQuality
-
         const { hip, torso, shoulder, arm, wrist } = speeds;
 
         const weightedSpeed = (
@@ -22,7 +20,15 @@ export class KinematicChain {
             wrist * 0.15
         );
 
-        return weightedSpeed * this.clubEfficiency * this.contactQuality;
+        // 게임적 재미와 실제 비거리를 위해 증폭 계수 적용 (m/s 단위)
+        // 보통 드라이버 볼스피드는 60~75m/s 수준임을 고려
+        const boostFactor = 2.2;
+        let ballSpeed = weightedSpeed * this.clubEfficiency * this.contactQuality * boostFactor;
+
+        // 최소 발사 속도 보장 (성공적인 휘두름 시 최소한의 비행 보장)
+        if (ballSpeed < 15) ballSpeed = 15 + Math.random() * 5;
+
+        return ballSpeed;
     }
 
     /**

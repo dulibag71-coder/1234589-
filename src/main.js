@@ -316,7 +316,14 @@ class GolfApp {
             z: -ballSpeed * Math.cos(angleRad)
         };
 
-        this.physics.createBall({ x: 0, y: 0, z: 0 });
+        // 기존 볼이 있다면 제거
+        if (this.physics.ball) {
+            this.physics.world.removeRigidBody(this.physics.ball);
+        }
+
+        // 티 박스 위치에 볼 생성
+        const teePos = this.course.getCurrentHole().teePosition;
+        this.physics.createBall(teePos);
         this.physics.applyImpulse(this.physics.ball, launchVelocity);
 
         this.isBallFlying = true;
@@ -355,10 +362,18 @@ class GolfApp {
                 // 리얼한 카메라 워킹
                 this.updateCamera(transform.position);
 
-                // 비거리 업데이트
-                const dist = Math.sqrt(transform.position.x ** 2 + transform.position.z ** 2);
+                // 비거리 업데이트 (티박스부터의 수평 거리)
+                const teePos = this.course.getCurrentHole().teePosition;
+                const dist = Math.sqrt(
+                    (transform.position.x - teePos.x) ** 2 +
+                    (transform.position.z - teePos.z) ** 2
+                );
+
                 this.ui.total.innerText = dist.toFixed(1);
-                if (transform.position.y > 0.1) this.ui.carry.innerText = dist.toFixed(1);
+                // 공이 공중에 있을 때만 캐리 갱신
+                if (transform.position.y > 0.1) {
+                    this.ui.carry.innerText = dist.toFixed(1);
+                }
 
                 this.updateMinimap(transform.position);
 
