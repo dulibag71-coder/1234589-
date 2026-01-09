@@ -4,11 +4,22 @@ export class PoseEstimator {
         this.videoElement = videoElement;
         this.onResults = onResults;
 
-        // global Pose 객체 확인 (game.html에서 CDN으로 로드됨)
-        const PoseObj = window.Pose || (typeof Pose !== 'undefined' ? Pose : null);
+        // global Pose 객체 확인 (다양한 네임스페이스 시도)
+        const PoseObj = window.Pose ||
+            (window.mpPose ? window.mpPose.Pose : null) ||
+            (typeof Pose !== 'undefined' ? Pose : null);
+
+        this.status = "Initializing...";
+        console.log("MediaPipe Pose Search:", {
+            windowPose: !!window.Pose,
+            mpPose: !!window.mpPose,
+            globalPose: typeof Pose !== 'undefined',
+            found: !!PoseObj
+        });
 
         if (!PoseObj) {
-            console.error("MediaPipe Pose library not loaded properly.");
+            this.status = "Pose Library NOT Found";
+            console.error(this.status);
             return;
         }
 
@@ -32,17 +43,23 @@ export class PoseEstimator {
         });
 
         this.pose.onResults((results) => {
+            this.status = results.poseLandmarks ? "Tracking Active" : "No Person Detected";
             if (this.onResults) {
                 this.onResults(results);
             }
         });
 
-        const CameraObj = window.Camera || (typeof Camera !== 'undefined' ? Camera : null);
+        const CameraObj = window.Camera ||
+            (window.mpCamera ? window.mpCamera.Camera : null) ||
+            (typeof Camera !== 'undefined' ? Camera : null);
 
         if (!CameraObj) {
-            console.error("MediaPipe Camera library not loaded properly.");
+            this.status = "Camera Library NOT Found";
+            console.error(this.status);
             return;
         }
+
+        this.status = "Camera Loading...";
 
         const camera = new CameraObj(this.videoElement, {
             onFrame: async () => {

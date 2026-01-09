@@ -54,20 +54,20 @@ export class SwingAnalyzer {
     }
 
     checkAddressStance(left, right, shoulders) {
-        // 1. 양손이 모여 있는가? (거리 체크)
+        // 1. 양손이 모여 있는가? (기준 완화: 0.2m -> 0.35m)
         const handDist = Math.sqrt((left.x - right.x) ** 2 + (left.y - right.y) ** 2 + (left.z - right.z) ** 2);
-        const handsTogether = handDist < 0.2; // 약 20cm 이내
+        const handsTogether = handDist < 0.35;
 
-        // 2. 양손이 어깨선보다 낮은가?
+        // 2. 양손이 어깨선 수준 이하인가? (어깨보다 약간 위여도 허용)
         const avgShoulderY = (shoulders[0].y + shoulders[1].y) / 2;
-        const handsLow = left.y < avgShoulderY && right.y < avgShoulderY;
+        const handsLow = left.y < (avgShoulderY + 0.2) && right.y < (avgShoulderY + 0.2);
 
-        // 3. 양손이 몸의 중심축 근처에 있는가?
+        // 3. 양손이 몸의 중심축 근처에 있는가? (기준 완화: 0.3m -> 0.5m)
         const avgShoulderX = (shoulders[0].x + shoulders[1].x) / 2;
-        const handsCentered = Math.abs((left.x + right.x) / 2 - avgShoulderX) < 0.3;
+        const handsCentered = Math.abs((left.x + right.x) / 2 - avgShoulderX) < 0.5;
 
-        // 4. 가시성 체크 (사람이 명확히 보이는가)
-        const visible = left.visibility > 0.5 && right.visibility > 0.5;
+        // 4. 가시성 체크 (기준 완화: 0.5 -> 0.3)
+        const visible = left.visibility > 0.3 && right.visibility > 0.3;
 
         return handsTogether && handsLow && handsCentered && visible;
     }
@@ -91,8 +91,8 @@ export class SwingAnalyzer {
         // 페이즈 감지 로직
         switch (this.phase) {
             case SWING_PHASE.WAITING:
-                // 속도가 낮고 + 골프 어드레스 자세가 감지되어야 함
-                if (speed < 0.15 && current.isStance) {
+                // 속도가 낮고 + 골프 어드레스 자세가 감지되어야 함 (속도 기준 상향: 0.15 -> 0.25)
+                if (speed < 0.25 && current.isStance) {
                     this.setPhase(SWING_PHASE.ADDRESS);
                 }
                 break;

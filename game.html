@@ -223,7 +223,11 @@
             <div id="top-bar">
                 <div class="hud-panel"><span class="hole-info" id="ui-hole-num">HOLE 1</span> <span id="ui-hole-par"
                         style="margin-left:15px; opacity:0.6; font-weight:400;">PAR 4 | 380m</span></div>
-                <div class="hud-panel"><span id="swing-status" class="status-badge">READY</span></div>
+                <div class="hud-panel" style="display:flex; flex-direction:column; align-items:center;">
+                    <span id="swing-status" class="status-badge">READY</span>
+                    <small id="vision-debug" style="font-size: 10px; opacity: 0.5; margin-top: 5px;">Vision:
+                        Initializing</small>
+                </div>
                 <div class="hud-panel" style="display:flex; align-items:center; gap:10px;">
                     <a href="index.html" class="btn-exit">✕</a>
                     <span style="font-weight:900; font-size:1.2em;">USER PROFILE</span>

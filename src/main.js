@@ -284,6 +284,12 @@ class GolfApp {
                 this.ui.ready.className = 'status-wait';
             }
         }
+
+        // 비전 디버그 정보 업데이트
+        const debugEl = document.getElementById('vision-debug');
+        if (debugEl && this.poseEstimator) {
+            debugEl.innerText = `Vision: ${this.poseEstimator.status} | Phase: ${this.analyzer.phase}`;
+        }
     }
 
     handleImpact(impact) {
