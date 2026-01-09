@@ -207,6 +207,103 @@ export class VisualEnhancer {
         scene.background = tex;
     }
 
+    static createImpactVFX(scene, position) {
+        // 1. 스파크 파티클
+        const particleCount = 30;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = [];
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = position.x;
+            positions[i * 3 + 1] = position.y;
+            positions[i * 3 + 2] = position.z;
+            velocities.push(new THREE.Vector3(
+                (Math.random() - 0.5) * 5,
+                Math.random() * 5,
+                (Math.random() - 0.5) * 5
+            ));
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const material = new THREE.PointsMaterial({
+            color: 0x00f2ff,
+            size: 0.1,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+        // 애니메이션 루프 (일회성)
+        const startTime = Date.now();
+        const animate = () => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 1) {
+                scene.remove(points);
+                return;
+            }
+
+            const positions = points.geometry.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] += velocities[i].x * 0.1;
+                positions[i * 3 + 1] += velocities[i].y * 0.1;
+                positions[i * 3 + 2] += velocities[i].z * 0.1;
+                velocities[i].y -= 0.2; // 중력
+            }
+            points.geometry.attributes.position.needsUpdate = true;
+            material.opacity = 1 - elapsed;
+            requestAnimationFrame(animate);
+        };
+        animate();
+
+        // 2. 임팩트 플래시 (PointLight)
+        const light = new THREE.PointLight(0x00f2ff, 10, 5);
+        light.position.copy(position);
+        scene.add(light);
+        setTimeout(() => scene.remove(light), 100);
+    }
+
+    static updateNeonTracer(line, points) {
+        if (!points || points.length < 2) return;
+
+        // 기존 라인을 네온 광선 스타일로 변경
+        if (!line._isNeon) {
+            line.material = new THREE.LineBasicMaterial({
+                color: 0x00f2ff,
+                linewidth: 5,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            line._isNeon = true;
+        }
+
+        line.geometry.setFromPoints(points);
+    }
+
+    static applyCinematicCamera(camera, ballPos, mode) {
+        if (mode === 'FOLLOW') {
+            const targetPos = new THREE.Vector3(
+                ballPos.x,
+                ballPos.y + 1.5,
+                ballPos.z + 5
+            );
+            camera.position.lerp(targetPos, 0.1);
+            camera.lookAt(ballPos.x, ballPos.y, ballPos.z);
+        } else if (mode === 'LANDING') {
+            // 낙하지점 줌인 효과
+            const targetPos = new THREE.Vector3(
+                ballPos.x + 2,
+                ballPos.y + 1,
+                ballPos.z - 2
+            );
+            camera.position.lerp(targetPos, 0.05);
+            camera.lookAt(ballPos.x, ballPos.y, ballPos.z);
+        }
+    }
+
     static createTree(x, z) {
         const group = new THREE.Group();
         const height = 4 + Math.random() * 4;

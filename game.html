@@ -10,18 +10,27 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #006aff;
+            --accent: #f1c40f;
+            --danger: #e74c3c;
+            --glass: rgba(0, 0, 0, 0.75);
+            --neon-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
+        }
+
         body {
             margin: 0;
             overflow: hidden;
             background: #000;
             font-family: 'Outfit', sans-serif;
+            color: #fff;
         }
 
         #app {
             width: 100vw;
             height: 100vh;
             position: relative;
-            background: #000;
         }
 
         #canvas-container {
@@ -33,6 +42,7 @@
             z-index: 0;
         }
 
+        /* GDR Pro HUD System */
         #ui-overlay {
             position: absolute;
             top: 0;
@@ -40,137 +50,187 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            color: #fff;
-            text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
             z-index: 10;
         }
 
         .hud-panel {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
+            background: var(--glass);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 16px;
+            padding: 20px;
             pointer-events: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         #top-bar {
             position: absolute;
-            top: 20px;
+            top: 25px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 20px;
-            align-items: center;
-            width: 95%;
+            gap: 25px;
+            width: 96%;
             justify-content: space-between;
+            align-items: flex-start;
         }
 
-        .hole-info {
-            font-size: 1.8em;
+        .hole-card {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hole-num {
+            font-size: 2.2em;
             font-weight: 900;
-            color: #f1c40f;
-            letter-spacing: -2px;
+            color: var(--primary);
+            filter: drop-shadow(var(--neon-shadow));
+            line-height: 1;
+        }
+
+        .hole-meta {
+            font-size: 0.9em;
+            opacity: 0.7;
+            font-weight: 400;
+        }
+
+        .status-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            padding: 8px 35px;
+            border-radius: 40px;
+            font-weight: 900;
+            font-size: 1.25em;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            box-shadow: var(--neon-shadow);
+        }
+
+        .status-ready {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .status-wait {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            opacity: 0.5;
         }
 
         #minimap-container {
             position: absolute;
-            top: 100px;
-            left: 20px;
-            width: 220px;
-            height: 400px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
+            top: 130px;
+            left: 30px;
+            width: 240px;
+            height: 420px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 20px;
             overflow: hidden;
+            box-shadow: var(--neon-shadow);
         }
 
         #minimap {
             width: 100%;
             height: 100%;
-            background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%);
+            background: #0a0a0a;
             position: relative;
         }
 
         .map-ball {
             position: absolute;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: #fff;
             border-radius: 50%;
-            box-shadow: 0 0 10px #fff;
+            box-shadow: 0 0 15px #fff;
             z-index: 10;
         }
 
         .map-pin {
             position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #e74c3c;
+            width: 14px;
+            height: 14px;
+            background: var(--danger);
             border-radius: 50%;
             z-index: 5;
             border: 2px solid #fff;
+            box-shadow: 0 0 10px var(--danger);
         }
 
         #bottom-metrics {
             position: absolute;
-            bottom: 30px;
+            bottom: 35px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 15px;
-            width: 95%;
-            height: 140px;
+            gap: 20px;
+            width: 96%;
+            height: 160px;
         }
 
-        .metric-box {
+        .metric-card {
             flex: 1;
+            background: var(--glass);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.2s ease;
         }
 
-        .metric-box::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: #2ecc71;
+        .metric-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .metric-card.highlight {
+            background: linear-gradient(145deg, var(--secondary) 0%, #001a33 100%);
+            border: 1px solid var(--primary);
+            box-shadow: var(--neon-shadow);
         }
 
         .metric-value {
-            font-size: 2.8em;
+            font-size: 3.4em;
             font-weight: 900;
-            letter-spacing: -1px;
+            line-height: 1;
+            margin-bottom: 5px;
         }
 
         .metric-label {
-            font-size: 0.9em;
-            opacity: 0.6;
-            font-weight: 400;
+            font-size: 0.85em;
+            color: var(--primary);
+            font-weight: 900;
             text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-unit {
+            font-size: 0.75em;
+            opacity: 0.5;
+            margin-top: 2px;
         }
 
         #video-container {
             position: absolute;
-            bottom: 180px;
-            right: 30px;
-            width: 280px;
-            height: 157px;
-            border-radius: 16px;
+            bottom: 220px;
+            right: 40px;
+            width: 300px;
+            height: 168px;
+            border-radius: 20px;
             overflow: hidden;
             transform: scaleX(-1);
-            background: #000;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--primary);
+            box-shadow: var(--neon-shadow);
         }
 
         video {
@@ -181,37 +241,29 @@
 
         #ai-report {
             position: absolute;
-            top: 100px;
-            right: 30px;
-            width: 320px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 8px 25px;
-            border-radius: 30px;
-            font-weight: 900;
-            background: rgba(255, 255, 255, 0.1);
-            font-size: 1.1em;
-            letter-spacing: 1px;
-        }
-
-        .status-ready {
-            background: #2ecc71;
-            color: #000;
+            top: 130px;
+            right: 40px;
+            width: 340px;
+            border-left: 4px solid var(--accent);
         }
 
         .btn-exit {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             background: rgba(255, 255, 255, 0.1);
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #fff;
-            padding: 10px;
+            padding: 12px;
             border-radius: 50%;
             cursor: pointer;
             pointer-events: auto;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-exit:hover {
+            background: var(--danger);
         }
     </style>
 </head>
@@ -221,58 +273,69 @@
         <div id="canvas-container"></div>
         <div id="ui-overlay">
             <div id="top-bar">
-                <div class="hud-panel"><span class="hole-info" id="ui-hole-num">HOLE 1</span> <span id="ui-hole-par"
-                        style="margin-left:15px; opacity:0.6; font-weight:400;">PAR 4 | 380m</span></div>
-                <div class="hud-panel" style="display:flex; flex-direction:column; align-items:center;">
-                    <span id="swing-status" class="status-badge">READY</span>
-                    <small id="vision-debug" style="font-size: 10px; opacity: 0.5; margin-top: 5px;">Vision:
-                        Initializing</small>
+                <div class="hud-panel hole-card">
+                    <span class="hole-num" id="ui-hole-num">HOLE 1</span>
+                    <span class="hole-meta" id="ui-hole-par">PAR 4 | 380m</span>
                 </div>
-                <div class="hud-panel" style="display:flex; align-items:center; gap:10px;">
+                <div class="hud-panel status-panel">
+                    <span id="swing-status" class="status-badge status-ready">READY</span>
+                    <small id="vision-debug" style="font-size: 11px; opacity: 0.4; letter-spacing: 1px;">VISION:
+                        INITIALIZING</small>
+                </div>
+                <div class="hud-panel" style="display:flex; align-items:center; gap:15px;">
+                    <div style="text-align:right;">
+                        <div style="font-weight:900; color:var(--primary);">PLAYER 1</div>
+                        <div style="font-size:0.8em; opacity:0.6;">LEVEL 42</div>
+                    </div>
                     <a href="index.html" class="btn-exit">✕</a>
-                    <span style="font-weight:900; font-size:1.2em;">USER PROFILE</span>
                 </div>
             </div>
+
             <div id="minimap-container">
                 <div id="minimap">
                     <div id="map-pin" class="map-pin"></div>
                     <div id="map-ball" class="map-ball"></div>
                 </div>
-                <div
-                    style="position:absolute; bottom:15px; width:100%; text-align:center; font-size:14px; font-weight:900;">
-                    PIN: <span id="dist-to-pin">380</span>m</div>
+                <div style="position:absolute; bottom:20px; width:100%; text-align:center;">
+                    <div style="font-size:11px; opacity:0.5; margin-bottom:2px;">REMAINING</div>
+                    <div style="font-size:18px; font-weight:900;"><span id="dist-to-pin">380</span>m</div>
+                </div>
             </div>
+
             <div id="ai-report" class="hud-panel" style="display: none;">
-                <b style="color: #f1c40f; font-size: 1.2em;">ANALYTICS ENGINE</b>
+                <div
+                    style="color: var(--accent); font-weight: 900; font-size: 1.1em; margin-bottom: 10px; display:flex; align-items:center; gap:8px;">
+                    <span>●</span> AI SWING ANALYSIS
+                </div>
                 <div id="report-content"
-                    style="font-size: 0.95em; margin-top: 12px; white-space: pre-wrap; line-height:1.6; opacity:0.9;">
-                </div>
+                    style="font-size: 0.9em; line-height:1.6; opacity:0.85; white-space: pre-wrap;"></div>
             </div>
+
             <div id="bottom-metrics">
-                <div class="metric-box">
-                    <div class="metric-label">Ball Speed</div>
-                    <div id="val-ballspeed" class="metric-value">0.0</div>
-                    <div class="metric-label">m/s</div>
+                <div class="metric-card">
+                    <span class="metric-label">Ball Speed</span>
+                    <span id="val-ballspeed" class="metric-value">0.0</span>
+                    <span class="metric-unit">m/s</span>
                 </div>
-                <div class="metric-box">
-                    <div class="metric-label">Angle</div>
-                    <div id="val-launchangle" class="metric-value">0.0</div>
-                    <div class="metric-label">deg</div>
+                <div class="metric-card">
+                    <span class="metric-label">Launch Angle</span>
+                    <span id="val-launchangle" class="metric-value">0.0</span>
+                    <span class="metric-unit">deg</span>
                 </div>
-                <div class="metric-box">
-                    <div class="metric-label">Back Spin</div>
-                    <div id="val-backspin" class="metric-value">0</div>
-                    <div class="metric-label">rpm</div>
+                <div class="metric-card">
+                    <span class="metric-label">Spin Rate</span>
+                    <span id="val-backspin" class="metric-value">0</span>
+                    <span class="metric-unit">rpm</span>
                 </div>
-                <div class="metric-box">
-                    <div class="metric-label">Carry</div>
-                    <div id="val-carry" class="metric-value">0.0</div>
-                    <div class="metric-label">m</div>
+                <div class="metric-card">
+                    <span class="metric-label">Carry</span>
+                    <span id="val-carry" class="metric-value">0.0</span>
+                    <span class="metric-unit">m</span>
                 </div>
-                <div class="metric-box" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
-                    <div class="metric-label">Total</div>
-                    <div id="val-totaldist" class="metric-value">0.0</div>
-                    <div class="metric-label">m</div>
+                <div class="metric-card highlight">
+                    <span class="metric-label" style="color:#fff;">Total Distance</span>
+                    <span id="val-totaldist" class="metric-value">0.0</span>
+                    <span class="metric-unit" style="opacity:0.8;">m</span>
                 </div>
             </div>
         </div>

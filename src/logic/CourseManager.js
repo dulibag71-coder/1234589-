@@ -132,4 +132,12 @@ export class CourseManager {
         // 컵 반경 0.1m 이내 + 속도 0.5m/s 이하 시 홀컵 인
         return dPin < 0.108 && speed < 0.5;
     }
+
+    getDistanceToPin(position) {
+        const hole = this.getCurrentHole();
+        return Math.sqrt(
+            (position.x - hole.pinPosition.x) ** 2 +
+            (position.z - hole.pinPosition.z) ** 2
+        );
+    }
 }

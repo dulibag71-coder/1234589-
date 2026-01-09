@@ -18,10 +18,11 @@ class GolfApp {
         // UI 매핑 (신규 레이아웃 대응)
         this.ui = {
             ready: document.getElementById('swing-status'),
-            metrics: document.getElementById('metrics-panel'),
+            metrics: document.getElementById('bottom-metrics'),
             ballSpeed: document.getElementById('val-ballspeed'),
             launchAngle: document.getElementById('val-launchangle'),
             backSpin: document.getElementById('val-backspin'),
+            totalIdx: document.getElementById('val-totaldist'), // ID matched
             total: document.getElementById('val-totaldist'),
             carry: document.getElementById('val-carry'),
             distToPin: document.getElementById('dist-to-pin'),
@@ -83,6 +84,7 @@ class GolfApp {
             this.updateMinimap();
 
             this.updateHoleView();
+            this.setCameraAddress(); // 코스 로드 완료 후 공 위치 재정렬
             window.addEventListener('resize', () => this.onWindowResize());
             console.log("GolfApp Fully Initialized");
         } catch (criticalError) {
@@ -279,28 +281,27 @@ class GolfApp {
         if (this.analyzer.phase === SWING_PHASE.ADDRESS) {
             this.readyTimer += 1;
             if (this.readyTimer > 30) {
+                if (!this.isReady) this.speak("Ready");
                 this.isReady = true;
                 if (this.ui.ready) {
                     this.ui.ready.innerText = 'READY';
-                    this.ui.ready.className = 'status-ready';
+                    this.ui.ready.className = 'status-badge status-ready';
                 }
             }
         } else if (this.analyzer.phase === SWING_PHASE.BACKSWING || this.analyzer.phase === SWING_PHASE.DOWNSWING) {
-            // 스윙 중에는 레디 상태 유지
+            // Processing
         } else {
             this.isReady = false;
             this.readyTimer = 0;
             if (this.ui.ready) {
-                // 자세가 안 잡혔을 때의 가이드성 메시지
                 this.ui.ready.innerText = 'TAKE STANCE';
-                this.ui.ready.className = 'status-wait';
+                this.ui.ready.className = 'status-badge status-wait';
             }
         }
 
-        // 비전 디버그 정보 업데이트
         const debugEl = document.getElementById('vision-debug');
         if (debugEl && this.poseEstimator) {
-            debugEl.innerText = `Vision: ${this.poseEstimator.status} | Phase: ${this.analyzer.phase}`;
+            debugEl.innerText = `VISION: ${this.poseEstimator.status.toUpperCase()} | ${this.analyzer.phase}`;
         }
     }
 
@@ -308,37 +309,32 @@ class GolfApp {
         if (this.isBallFlying) return;
         this.tracerPoints = [];
         this.audio.playImpact();
+        this.speak("Excellent Shot!");
+
+        VisualEnhancer.createImpactVFX(this.scene, this.ballMesh.position);
+        this.shakeCamera();
 
         const speeds = this.biomech.extractSpeeds(this.analyzer.history);
         const ballSpeed = this.biomech.calculateBallSpeed(null, speeds);
 
-        // 정교화된 탄도학 파라미터 계산 (Attack Angle 반영)
         const params = this.biomech.calculateLaunchParams(ballSpeed, impact.attackAngle || 10);
         const { launchAngle, backSpin, sideSpin } = params;
 
-        // UI 지표 업데이트
         this.ui.ballSpeed.innerText = ballSpeed.toFixed(1);
         this.ui.launchAngle.innerText = launchAngle.toFixed(1);
         this.ui.backSpin.innerText = Math.round(backSpin);
-        if (this.ui.metrics) this.ui.metrics.style.display = 'flex';
 
-        // 발사 벡터 계산 (Y: 발사각, X: 사이드 스핀/방향)
         const angleRad = launchAngle * (Math.PI / 180);
         const launchVelocity = {
-            x: impact.direction.x * 0.5 + (sideSpin / 1000), // 방향성 보정
+            x: impact.direction.x * 0.5 + (sideSpin / 1000),
             y: ballSpeed * Math.sin(angleRad),
             z: -ballSpeed * Math.cos(angleRad)
         };
 
-        // 기존 볼 제거 및 티박스 위치 생성
-        if (this.physics.ball) {
-            this.physics.world.removeRigidBody(this.physics.ball);
-        }
+        if (this.physics.ball) this.physics.world.removeRigidBody(this.physics.ball);
 
         const teePos = this.course.getCurrentHole().teePosition;
         this.physics.createBall(teePos);
-
-        // 물리 엔진에 힘과 스핀(토크) 전달
         this.physics.applyImpulse(this.physics.ball, launchVelocity, { backSpin, sideSpin });
 
         this.isBallFlying = true;
@@ -349,82 +345,80 @@ class GolfApp {
         this.ui.report.style.display = 'block';
     }
 
+    shakeCamera() {
+        const originalPos = this.camera.position.clone();
+        const startTime = Date.now();
+        const shake = () => {
+            if (Date.now() - startTime < 200) {
+                this.camera.position.x += (Math.random() - 0.5) * 0.1;
+                this.camera.position.y += (Math.random() - 0.5) * 0.1;
+                requestAnimationFrame(shake);
+            } else {
+                this.camera.position.copy(originalPos);
+            }
+        };
+        shake();
+    }
+
+    speak(text) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 1.1;
+        window.speechSynthesis.speak(utterance);
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
         const dt = this.clock.getDelta();
 
-        if (this.isBallFlying && this.physics) {
+        if (this.physics && this.physics.ball) {
             this.physics.step(dt);
             const transform = this.physics.getBallTransform();
-            if (transform && this.course) {
-                const terrain = this.course.checkTerrain(transform.position);
 
-                if (terrain === 'WATER') {
-                    this.isBallFlying = false;
-                    this.audio?.playSplash?.() || console.log("SPLASH!");
-                    setTimeout(() => this.setCameraAddress(), 2000);
-                    return;
-                }
-
-                this.physics.updatePhysicsProperties(terrain);
-
+            if (transform) {
                 this.ballMesh.position.copy(transform.position);
                 this.ballMesh.quaternion.copy(transform.quaternion);
 
-                this.tracerPoints.push(new THREE.Vector3().copy(transform.position));
-                this.tracerLine.geometry.setFromPoints(this.tracerPoints);
+                const terrain = this.course.checkTerrain(transform.position);
+                this.physics.updatePhysicsProperties(terrain);
 
-                // 리얼한 카메라 워킹
-                this.updateCamera(transform.position);
+                if (this.isBallFlying) {
+                    this.tracerPoints.push(new THREE.Vector3().copy(transform.position));
+                    VisualEnhancer.updateNeonTracer(this.tracerLine, this.tracerPoints);
+                    VisualEnhancer.applyCinematicCamera(this.camera, transform.position, this.cameraMode);
 
-                // 비거리 업데이트 (티박스부터의 수평 거리)
-                const teePos = this.course.getCurrentHole().teePosition;
-                const dist = Math.sqrt(
-                    (transform.position.x - teePos.x) ** 2 +
-                    (transform.position.z - teePos.z) ** 2
-                );
+                    const dist = this.course.getDistanceToPin(transform.position);
+                    const teePos = this.course.getCurrentHole().teePosition;
+                    const carryDist = Math.sqrt((transform.position.x - teePos.x) ** 2 + (transform.position.z - teePos.z) ** 2);
 
-                this.ui.total.innerText = dist.toFixed(1);
-                // 공이 공중에 있을 때만 캐리 갱신
-                if (transform.position.y > 0.1) {
-                    this.ui.carry.innerText = dist.toFixed(1);
-                }
+                    if (this.ui.carry) this.ui.carry.innerText = carryDist.toFixed(1);
+                    if (this.ui.total) this.ui.total.innerText = (carryDist * 1.05).toFixed(1);
+                    if (this.ui.distToPin) this.ui.distToPin.innerText = Math.round(dist);
 
-                this.updateMinimap(transform.position);
-
-                const vel = this.physics.ball.getLinearVelocity();
-                if (transform.position.y < 0.05 && Math.abs(vel.y()) > 0.5) this.audio.playGroundHit();
-
-                if (transform.position.y < 0.05 && Math.sqrt(vel.x() ** 2 + vel.z() ** 2) < 0.2) {
-                    this.isBallFlying = false;
-                    setTimeout(() => this.setCameraAddress(), 3000); // 3초 후 어드레스 복귀
+                    const vel = this.physics.ball.getLinearVelocity();
+                    if (terrain === 'WATER') {
+                        this.isBallFlying = false;
+                        this.speak("Water Hazard!");
+                        setTimeout(() => this.setCameraAddress(), 2000);
+                    } else if (transform.position.y < 0.1 && Math.abs(vel.y()) < 0.1 && Math.sqrt(vel.x() ** 2 + vel.z() ** 2) < 0.2) {
+                        this.isBallFlying = false;
+                        if (this.course.isHoledOut(transform.position, vel)) {
+                            this.speak("Hole in one! Incredible!");
+                        }
+                        setTimeout(() => this.setCameraAddress(), 3000);
+                    } else if (transform.position.y < 0.1 && Math.abs(vel.y()) > 0.5) {
+                        this.audio.playGroundHit();
+                    }
                 }
             }
         }
 
         this.renderer.render(this.scene, this.camera);
-    }
-
-    updateCamera(ballPos) {
-        if (this.cameraMode === 'FOLLOW') {
-            // 공의 비행 높이에 따른 다이나믹 뷰
-            const camTarget = new THREE.Vector3(ballPos.x, ballPos.y, ballPos.z);
-            const camPos = new THREE.Vector3(
-                ballPos.x,
-                Math.max(ballPos.y + 2, 1.5),
-                ballPos.z + 10
-            );
-            this.camera.position.lerp(camPos, 0.1);
-            this.camera.lookAt(camTarget);
-
-            // 공이 낙하를 시작하고 높이가 낮아지면 LANDING 뷰로 전환 고려 가능
+        if (this.minimap) {
+            this.minimap.update(this.ballMesh.position, this.course.getCurrentHole().pinPosition);
         }
-    }
-
-    updateMinimap(ballPos = { x: 0, y: 0, z: 0 }) {
-        if (!this.course || !this.minimap) return;
-        const pinPos = this.course.getCurrentHole().pinPosition;
-        this.minimap.update(ballPos, pinPos);
     }
 
     onWindowResize() {
