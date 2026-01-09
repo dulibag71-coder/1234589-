@@ -32,6 +32,7 @@ class GolfApp {
 
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
+        this.camera.up.set(0, 1, 0);
         this.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
 
         this.physics = null;
@@ -132,8 +133,8 @@ class GolfApp {
             metalness: 0.05
         });
         this.ground = new THREE.Mesh(groundGeo, this.groundMat);
-        this.ground.rotation.x = -Math.PI / 2;
-        this.ground.position.z = -1000;
+        this.ground.rotation.set(-Math.PI / 2, 0, 0);
+        this.ground.position.set(0, 0, -1000);
         this.ground.receiveShadow = true;
         this.scene.add(this.ground);
 

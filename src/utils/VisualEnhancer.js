@@ -11,9 +11,9 @@ export class VisualEnhancer {
                 ctx.fillStyle = `rgba(20, 50, 20, ${Math.random() * 0.3})`;
                 ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 8);
             }
-            // 깎인 자국
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            for (let i = 0; i < 1024; i += 64) ctx.fillRect(i, 0, 32, 1024);
+            // 깎인 자국 (더 부드럽게)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+            for (let i = 0; i < 1024; i += 128) ctx.fillRect(i, 0, 16, 1024);
         }, 1024);
 
         // Rough: 진한 녹색 + 거친 입자
@@ -125,31 +125,17 @@ export class VisualEnhancer {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
 
-        // 기본은 러프
-        ctx.fillStyle = '#2d5a27';
+        // 1. 기본 러프 (Deep Green)
+        ctx.fillStyle = '#1e3d1a';
         ctx.fillRect(0, 0, width, height);
 
-        // 좌표 변환 (World Z -500 ~ 500 -> Canvas Y 0 ~ height)
-        const worldToCanvas = (x, z) => ({
-            x: (x + 500) * (width / 1000),
-            y: (z + 1000) * (height / 2000)
-        });
+        // 스케일링 (1000m x 2000m -> canvas size)
+        const sX = width / 1000;
+        const sZ = height / 2000;
 
-        const invWorldToCanvas = (x, z) => ({
-            x: (x / (width / 1000)) - 500,
-            y: (z / (height / 2000)) - 1000
-        });
-
-        // 1. Water
-        ctx.fillStyle = '#1e3c72';
-        for (const w of hole.water) {
-            const p = this.worldToTex(w.x, w.z, width, height);
-            ctx.fillRect(p.x - w.width * 0.5, p.y - w.length * 0.5, w.width, w.length);
-        }
-
-        // 2. Fairway (Line based)
-        ctx.strokeStyle = '#4a7c44';
-        ctx.lineWidth = hole.fairwayWidth * (width / 200); // 대략적인 마스킹 굵기
+        // 2. 페어웨이
+        ctx.strokeStyle = '#3a5f2a';
+        ctx.lineWidth = hole.fairwayWidth * sX;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
@@ -160,32 +146,42 @@ export class VisualEnhancer {
         }
         ctx.stroke();
 
-        // 3. Green
-        ctx.fillStyle = '#5ebb47';
+        // 3. 그린
+        ctx.fillStyle = '#4db33d';
         const gp = this.worldToTex(hole.pinPosition.x, hole.pinPosition.z, width, height);
         ctx.beginPath();
-        ctx.arc(gp.x, gp.y, hole.greenRadius * 2, 0, Math.PI * 2);
+        ctx.arc(gp.x, gp.y, hole.greenRadius * sX, 0, Math.PI * 2);
         ctx.fill();
 
-        // 4. Bunkers
+        // 4. 워터 해저드
+        ctx.fillStyle = '#1e3c72';
+        for (const w of hole.water) {
+            const p = this.worldToTex(w.x, w.z, width, height);
+            ctx.fillRect(p.x - w.width * sX * 0.5, p.y - w.length * sZ * 0.5, w.width * sX, w.length * sZ);
+        }
+
+        // 5. 벙커
         ctx.fillStyle = '#d2b48c';
         for (const b of hole.bunkers) {
             const p = this.worldToTex(b.x, b.z, width, height);
             ctx.beginPath();
-            ctx.arc(p.x, p.y, b.radius * 2, 0, Math.PI * 2);
+            ctx.ellipse(p.x, p.y, b.radius * sX, b.radius * sZ * 1.5, 0, 0, Math.PI * 2);
             ctx.fill();
         }
 
         const tex = new THREE.CanvasTexture(canvas);
+        tex.anisotropy = 16;
         return tex;
     }
 
     static worldToTex(x, z, w, h) {
-        // World: X(-500~500), Z(0 ~ -2000)
-        // Tex: X(0~w), Y(h~0)
+        // Z=0 (Near) -> V=0 (Bottom of texture) -> Y=h
+        // Z=-2000 (Far) -> V=1 (Top of texture) -> Y=0
+        const u = (x + 500) / 1000;
+        const v = Math.abs(z) / 2000;
         return {
-            x: (x + 500) * (w / 1000),
-            y: h - (Math.abs(z) * (h / 2000))
+            x: u * w,
+            y: (1 - v) * h
         };
     }
 
@@ -348,8 +344,8 @@ export class VisualEnhancer {
     }
 
     static createWeatherEffect(scene) {
-        // 1. Fog
-        scene.fog = new THREE.FogExp2(0x0a2e5c, 0.005);
+        // 1. Fog (가시성 대폭 향상)
+        scene.fog = new THREE.FogExp2(0x0a2e5c, 0.001);
 
         // 2. Ambient Particles (Pollen/Dust)
         const count = 1000;
