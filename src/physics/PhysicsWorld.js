@@ -67,9 +67,18 @@ export class PhysicsWorld {
         return body;
     }
 
-    applyImpulse(body, force) {
+    applyImpulse(body, force, spin = { backSpin: 0, sideSpin: 0 }) {
         const impulse = new Ammo.btVector3(force.x, force.y, force.z);
         body.applyCentralImpulse(impulse);
+
+        // 스핀 적용 (각속도 부여)
+        // 백스핀은 X축 회전, 사이드스핀은 Y축 회전
+        const angularImpulse = new Ammo.btVector3(
+            spin.backSpin / 10,  // 계수 조정 필요
+            spin.sideSpin / 10,
+            0
+        );
+        body.applyTorqueImpulse(angularImpulse);
     }
 
     updatePhysicsProperties(terrainType) {
@@ -99,7 +108,7 @@ export class PhysicsWorld {
         const v = Math.sqrt(velocity.x() ** 2 + velocity.y() ** 2 + velocity.z() ** 2);
         if (v < 0.1) return;
 
-        // 항력
+        // 항력 (Drag Force)
         const Cd = 0.45;
         const area = Math.PI * (0.021 ** 2);
         const dragMagnitude = 0.5 * Cd * this.airDensity * area * (v ** 2);
@@ -111,9 +120,16 @@ export class PhysicsWorld {
         );
         body.applyCentralForce(dragForce);
 
-        // 정교화된 마그누스 효과
-        const Cl = 0.15;
+        // 정교화된 마그누스 효과 (Lift Force based on Spin)
+        // 공의 회전 속도(Spin)를 물리 바디의 각속도로부터 추출하거나 별도 저장 가능
+        const angularVelocity = body.getAngularVelocity();
+        const spinRads = angularVelocity.x(); // 백스핀 (X축 회전)
+
+        // Cl보정: 스핀이 높을수록 리프트가 강해짐
+        const Cl = 0.15 + (Math.abs(spinRads) / 1000) * 0.1;
         const liftMagnitude = 0.5 * Cl * this.airDensity * area * (v ** 2);
+
+        // 리프트 방향: 속도 벡터와 스핀 벡터의 외적 방향 (단순화하여 위쪽 방향)
         const liftForce = new Ammo.btVector3(0, liftMagnitude, 0);
         body.applyCentralForce(liftForce);
 

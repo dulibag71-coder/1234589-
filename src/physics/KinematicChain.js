@@ -35,13 +35,12 @@ export class KinematicChain {
      * 랜드마크로부터 대략적인 각 부위의 속도/에너지를 추출합니다.
      */
     extractSpeeds(history) {
-        // 실제 구현 시 프레임 간 랜드마크 각도 변화율 계산
-        // 현재는 손목 속도를 기반으로 역산하거나 단순화된 모델 사용
+        if (history.length < 2) return { hip: 0, torso: 0, shoulder: 0, arm: 0, wrist: 0 };
         const last = history[history.length - 1];
         const prev = history[history.length - 2];
         const dt = (last.timestamp - prev.timestamp) / 1000;
+        if (dt <= 0) return { hip: 0, torso: 0, shoulder: 0, arm: 0, wrist: 0 };
 
-        // 가상의 각속도 데이터 (실제 분석 로직으로 대체 필요)
         const wristSpeed = Math.sqrt(
             ((last.wrist.x - prev.wrist.x) / dt) ** 2 +
             ((last.wrist.y - prev.wrist.y) / dt) ** 2 +
@@ -54,6 +53,29 @@ export class KinematicChain {
             shoulder: wristSpeed * 0.7,
             arm: wristSpeed * 0.9,
             wrist: wristSpeed
+        };
+    }
+
+    /**
+     * @param {number} ballSpeed 임팩트 시 계산된 볼 스피드 (m/s)
+     * @param {number} attackAngle 임팩트 시 스윙 궤적 각도 (도)
+     */
+    calculateLaunchParams(ballSpeed, attackAngle) {
+        // 드라이버 기준 표준 모델 (로프트 10.5도 기준 상상력 포함)
+        const staticLoft = 10.5;
+
+        // 실제 발사각 = 정적 로프트 + (공격각 * 보정계수)
+        const launchAngle = staticLoft + (attackAngle * 0.5);
+
+        // 백스핀 = (로프트 - 공격각) * 속도비례상수
+        // 올려칠수록(AttackAngle +) 백스핀은 감소함
+        const spinFactor = 250;
+        const backSpin = Math.max(1500, (staticLoft - attackAngle) * spinFactor);
+
+        return {
+            launchAngle: Math.max(8, Math.min(25, launchAngle)),
+            backSpin: backSpin,
+            sideSpin: (Math.random() - 0.5) * 500 // 단순화된 사이드 스핀
         };
     }
 }

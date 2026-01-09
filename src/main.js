@@ -300,31 +300,34 @@ class GolfApp {
         const speeds = this.biomech.extractSpeeds(this.analyzer.history);
         const ballSpeed = this.biomech.calculateBallSpeed(null, speeds);
 
-        // 전문 지표 계산
-        const launchAngle = 12 + Math.random() * 5; // 드라이버 기준 가상 각도
-        const backSpin = 2200 + (Math.random() - 0.5) * 500;
+        // 정교화된 탄도학 파라미터 계산 (Attack Angle 반영)
+        const params = this.biomech.calculateLaunchParams(ballSpeed, impact.attackAngle || 10);
+        const { launchAngle, backSpin, sideSpin } = params;
 
+        // UI 지표 업데이트
         this.ui.ballSpeed.innerText = ballSpeed.toFixed(1);
         this.ui.launchAngle.innerText = launchAngle.toFixed(1);
         this.ui.backSpin.innerText = Math.round(backSpin);
         if (this.ui.metrics) this.ui.metrics.style.display = 'flex';
 
+        // 발사 벡터 계산 (Y: 발사각, X: 사이드 스핀/방향)
         const angleRad = launchAngle * (Math.PI / 180);
         const launchVelocity = {
-            x: (Math.random() - 0.5) * 8,
+            x: impact.direction.x * 0.5 + (sideSpin / 1000), // 방향성 보정
             y: ballSpeed * Math.sin(angleRad),
             z: -ballSpeed * Math.cos(angleRad)
         };
 
-        // 기존 볼이 있다면 제거
+        // 기존 볼 제거 및 티박스 위치 생성
         if (this.physics.ball) {
             this.physics.world.removeRigidBody(this.physics.ball);
         }
 
-        // 티 박스 위치에 볼 생성
         const teePos = this.course.getCurrentHole().teePosition;
         this.physics.createBall(teePos);
-        this.physics.applyImpulse(this.physics.ball, launchVelocity);
+
+        // 물리 엔진에 힘과 스핀(토크) 전달
+        this.physics.applyImpulse(this.physics.ball, launchVelocity, { backSpin, sideSpin });
 
         this.isBallFlying = true;
         this.cameraMode = 'FOLLOW';

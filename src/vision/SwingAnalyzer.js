@@ -138,13 +138,33 @@ export class SwingAnalyzer {
     }
 
     handleImpact(speed, velocity) {
-        // 실제 임팩트 물리량 산출 (생체역학 모델은 추후 보강)
+        // 임팩트 전후 5프레임의 궤적을 분석하여 Attack Angle 산출
+        const attackAngle = this.calculateAttackAngle();
+
         if (this.onImpact) {
             this.onImpact({
-                speed: speed * 1.5, // 클럽 헤드 속도 추정치 보정
+                speed: speed * 1.5,
                 direction: velocity,
+                attackAngle: attackAngle, // 도 단위 (Positive: Upper blow, Negative: Down blow)
                 timestamp: performance.now()
             });
         }
+    }
+
+    calculateAttackAngle() {
+        if (this.history.length < 5) return 10; // 기본값
+
+        // 임팩트 직전 5프레임의 Y, Z 변화량 분석
+        const points = this.history.slice(-5);
+        const first = points[0].wrist;
+        const last = points[points.length - 1].wrist;
+
+        const dz = last.z - first.z;
+        const dy = last.y - first.y;
+
+        // 골프에서 0도는 지면과 평행, +값은 올려치는 궤적
+        // 실제 좌표계 방향(Z-로 전진, Y+로 상승) 고려
+        const angleRad = Math.atan2(dy, -dz);
+        return angleRad * (180 / Math.PI);
     }
 }
